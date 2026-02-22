@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LABERINTOS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(145deg, #0b0e1a 0%, #151f34 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: #eef3ff;
+        }
+
+        .game-frame {
+            max-width: 1200px;
+            width: 100%;
+            background: rgba(6, 12, 28, 0.8);
+            backdrop-filter: blur(10px);
+            border-radius: 48px;
+            padding: 32px;
+            box-shadow: 0 30px 50px rgba(0, 0, 0, 0.8), inset 0 1px 2px rgba(255,255,255,0.1);
+            border: 1px solid #2b4875;
+        }
+
+        .top-bar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            gap: 20px;
+        }
+
+        .game-headline {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 1.8rem;
+            background: linear-gradient(135deg, #b3f0ff, #a67cff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 0 10px #507fff;
+        }
+
+        .stats-row {
+            display: flex;
+            gap: 18px;
+            flex-wrap: wrap;
+        }
+
+        .stat-block {
+            background: #0f1a2f;
+            border-radius: 30px;
+            padding: 12px 26px;
+            min-width: 130px;
+            text-align: center;
+            border: 1px solid #3b5585;
+            box-shadow: inset 0 3px 8px #00000060;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            color: #a2bbff;
+            letter-spacing: 1.5px;
+        }
+
+        .stat-number {
+            font-size: 2.3rem;
+            font-weight: 800;
+            line-height: 1.3;
+        }
+
+        .timer-big {
+            font-family: 'Press Start 2P', cursive;
+            color: #ffcf6e;
+        }
+
+        .timer-big.urgent {
+            color: #ff6b6b;
+            animation: throb 0.6s infinite;
+        }
+
+        @keyframes throb { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+
+        .record-flare {
+            background: #f9c74f;
+            color: #1b1f30;
+            font-weight: bold;
+            padding: 6px 20px;
+            border-radius: 40px;
+            font-size: 1.1rem;
+            box-shadow: 0 0 25px gold;
+            animation: pop 1s infinite;
+        }
+
+        @keyframes pop { 0%,100%{transform:scale(1);} 50%{transform:scale(1.05);} }
+
+        .play-zone {
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .canvas-shell {
+            background: #0a1120;
+            padding: 22px;
+            border-radius: 50px;
+            border: 3px solid #2e4a7a;
+            box-shadow: 0 20px 30px -5px black;
+        }
+
+        #mazeCanvas {
+            display: block;
+            border-radius: 30px;
+            width: 500px;
+            height: 500px;
+            background: #0b1427;
+        }
+
+        .info-panel {
+            flex: 1;
+            min-width: 250px;
+            background: rgba(8, 16, 34, 0.9);
+            border-radius: 48px;
+            padding: 32px 24px;
+            border: 2px solid #3466aa;
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        .level-presenter {
+            text-align: center;
+        }
+
+        .level-number {
+            font-size: 3.2rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #98c1ff, #c395ff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .difficulty-chip {
+            display: inline-block;
+            padding: 6px 24px;
+            border-radius: 40px;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin: 12px 0;
+            background: #2f4f68;
+            color: white;
+        }
+
+        .easy { background: #1f7a3b; }
+        .medium { background: #b85b1e; }
+        .hard { background: #b13b3b; }
+
+        .progress-bar-bg {
+            height: 14px;
+            background: #1b263f;
+            border-radius: 20px;
+            margin: 10px 0;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #45f5a2, #3da5ff);
+            transition: width 0.2s;
+        }
+
+        .tip-box {
+            background: #0f1d36;
+            padding: 20px;
+            border-radius: 32px;
+            border-left: 6px solid #f5b342;
+        }
+
+        .btn {
+            background: linear-gradient(145deg, #1f4395, #102055);
+            border: none;
+            color: white;
+            font-weight: 700;
+            font-size: 1.4rem;
+            padding: 18px 20px;
+            border-radius: 60px;
+            cursor: pointer;
+            transition: 0.1s;
+            box-shadow: 0 10px 0 #0a173b, 0 5px 20px #0059ff;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .btn:active {
+            transform: translateY(5px);
+            box-shadow: 0 5px 0 #0a173b;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            transform: none;
+            box-shadow: 0 8px 0 #0a173b;
+            pointer-events: none;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.8);
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #1a2745;
+            border-radius: 60px;
+            padding: 40px;
+            max-width: 450px;
+            width: 90%;
+            text-align: center;
+            border: 4px solid #ff7b4a;
+        }
+
+        .modal-content.win {
+            border-color: #55e07c;
+            background: #1d4f2a;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+<div class="game-frame">
+    <div class="top-bar">
+        <span class="game-headline">⚡ L A B E R I N T O S ⚡</span>
+        <div class="stats-row">
+            <div class="stat-block"><span class="stat-label">⏱️ SEGUNDOS</span><div class="stat-number timer-big" id="timerDisplay">15</div></div>
+            <div class="stat-block"><span class="stat-label">📌 NIVEL</span><div class="stat-number" id="levelDisplay">1/10</div></div>
+            <div class="stat-block"><span class="stat-label">🏅 RÉCORD</span><div class="stat-number" id="recordDisplay">--</div></div>
+            <div id="recordGlow" class="record-flare hidden">✨ MEJOR TIEMPO</div>
+        </div>
+    </div>
+
+    <div class="play-zone">
+        <div class="canvas-shell">
+            <canvas id="mazeCanvas" width="500" height="500"></canvas>
+        </div>
+        <div class="info-panel">
+            <div class="level-presenter">
+                <div class="level-number" id="bigLevelLabel">NIVEL 1</div>
+                <span class="difficulty-chip easy" id="difficultyChip">FÁCIL</span>
+                <div class="progress-bar-bg"><div class="progress-fill" id="progressFill" style="width:10%"></div></div>
+            </div>
+            <div class="tip-box">
+                <p><strong>🎯 META:</strong> círculo verde 🟢</p>
+                <p><strong>⌨️ MOVER:</strong> FLECHAS / WASD</p>
+                <p><strong>⏳ TIEMPOS:</strong> Niveles 1-3: 15s · 4-7: 25s · 8-10: 50s</p>
+                <p style="color:#ffa05e;">⚠️ Si el tiempo llega a 0 → el nivel se reinicia</p>
+            </div>
+            <button class="btn" id="startBtn" onclick="startGame()">🚀 COMENZAR</button>
+            <button class="btn" id="restartBtn" onclick="restartCurrentLevel()" disabled>⟲ REINTENTAR NIVEL</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL DE VICTORIA -->
+<div class="modal" id="winModal">
+    <div class="modal-content win">
+        <h2 style="color:#d8ffb8;">🏆 ¡LO LOGRASTE!</h2>
+        <div style="font-size:5rem; margin:20px 0;">10/10</div>
+        <p>Eres un maestro del laberinto</p>
+        <button class="btn" style="background:#308f46; margin-top:20px;" onclick="resetFullGame()">JUGAR DE NUEVO</button>
+    </div>
+</div>
+
+<script>
+    (function() {
+        // ---------- CONFIGURACIÓN ----------
+        const MAX_LEVEL = 10;
+        let currentLevel = 1;
+        let maxLevelUnlocked = 1;
+        let timeLeft = 15;                // se actualizará según nivel
+        let timerInterval = null;
+        let gameActive = false;
+        let playerPos = { x: 0, y: 0 };
+        let maze = [];
+        let mazeSize = 10;
+        let bestTimeThisRun = null;        // mejor tiempo (en segundos) para el nivel actual
+
+        // Referencias DOM
+        const canvas = document.getElementById('mazeCanvas');
+        const ctx = canvas.getContext('2d');
+        const timerSpan = document.getElementById('timerDisplay');
+        const levelSpan = document.getElementById('levelDisplay');
+        const recordSpan = document.getElementById('recordDisplay');
+        const recordGlow = document.getElementById('recordGlow');
+        const bigLevelSpan = document.getElementById('bigLevelLabel');
+        const difficultyChip = document.getElementById('difficultyChip');
+        const progressFill = document.getElementById('progressFill');
+        const startBtn = document.getElementById('startBtn');
+        const restartBtn = document.getElementById('restartBtn');
+        const winModal = document.getElementById('winModal');
+
+        // Configuración por nivel: tamaño y dificultad
+        const levelConfig = {
+            1:  { size: 10, diff: 'easy' },
+            2:  { size: 10, diff: 'easy' },
+            3:  { size: 12, diff: 'easy' },
+            4:  { size: 12, diff: 'medium' },
+            5:  { size: 14, diff: 'medium' },
+            6:  { size: 14, diff: 'medium' },
+            7:  { size: 16, diff: 'medium' },
+            8:  { size: 18, diff: 'hard' },
+            9:  { size: 18, diff: 'hard' },
+            10: { size: 20, diff: 'hard' }
+        };
+
+        // TIEMPOS PERSONALIZADOS según nivel
+        function getTimeByLevel(level) {
+            if (level <= 3) return 15;      // niveles 1,2,3 -> 15 segundos
+            if (level <= 7) return 25;      // niveles 4,5,6,7 -> 25 segundos
+            return 50;                       // niveles 8,9,10 -> 50 segundos
+        }
+
+        // ---------- GENERAR LABERINTO (DFS) ----------
+        function generateMaze(dim) {
+            const grid = [];
+            for (let r = 0; r < dim; r++) {
+                const row = [];
+                for (let c = 0; c < dim; c++) {
+                    row.push({ top: true, right: true, bottom: true, left: true, visited: false });
+                }
+                grid.push(row);
+            }
+
+            const stack = [];
+            grid[0][0].visited = true;
+            stack.push({ x: 0, y: 0 });
+
+            while (stack.length) {
+                const current = stack[stack.length - 1];
+                const { x, y } = current;
+                const neighbours = [];
+
+                const dirs = [
+                    { dx: 0, dy: -1 }, { dx: 1, dy: 0 }, { dx: 0, dy: 1 }, { dx: -1, dy: 0 }
+                ];
+                for (let d of dirs) {
+                    const nx = x + d.dx;
+                    const ny = y + d.dy;
+                    if (nx >= 0 && nx < dim && ny >= 0 && ny < dim && !grid[ny][nx].visited) {
+                        neighbours.push({ x: nx, y: ny, dir: d });
+                    }
+                }
+
+                if (neighbours.length > 0) {
+                    const chosen = neighbours[Math.floor(Math.random() * neighbours.length)];
+                    if (chosen.dir.dx === 1) { // derecha
+                        grid[y][x].right = false;
+                        grid[chosen.y][chosen.x].left = false;
+                    } else if (chosen.dir.dx === -1) { // izquierda
+                        grid[y][x].left = false;
+                        grid[chosen.y][chosen.x].right = false;
+                    } else if (chosen.dir.dy === -1) { // arriba
+                        grid[y][x].top = false;
+                        grid[chosen.y][chosen.x].bottom = false;
+                    } else if (chosen.dir.dy === 1) { // abajo
+                        grid[y][x].bottom = false;
+                        grid[chosen.y][chosen.x].top = false;
+                    }
+
+                    grid[chosen.y][chosen.x].visited = true;
+                    stack.push({ x: chosen.x, y: chosen.y });
+                } else {
+                    stack.pop();
+                }
+            }
+
+            // Reset visited flags
+            for (let r = 0; r < dim; r++) {
+                for (let c = 0; c < dim; c++) {
+                    grid[r][c].visited = false;
+                }
+            }
+            return grid;
+        }
+
+        // ---------- DIBUJAR MAZE (círculos del mismo tamaño) ----------
+        function drawMaze() {
+            ctx.clearRect(0, 0, 500, 500);
+            if (!maze.length) return;
+
+            const dim = maze.length;
+            const cellSize = 500 / dim;
+            const radius = cellSize * 0.3; // Mismo radio para ambos
+
+            // Paredes
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = '#b8d2ff';
+            for (let row = 0; row < dim; row++) {
+                for (let col = 0; col < dim; col++) {
+                    const cell = maze[row][col];
+                    const x = col * cellSize;
+                    const y = row * cellSize;
+
+                    if (cell.top) {
+                        ctx.beginPath();
+                        ctx.moveTo(x, y);
+                        ctx.lineTo(x + cellSize, y);
+                        ctx.stroke();
+                    }
+                    if (cell.right) {
+                        ctx.beginPath();
+                        ctx.moveTo(x + cellSize, y);
+                        ctx.lineTo(x + cellSize, y + cellSize);
+                        ctx.stroke();
+                    }
+                    if (cell.bottom) {
+                        ctx.beginPath();
+                        ctx.moveTo(x, y + cellSize);
+                        ctx.lineTo(x + cellSize, y + cellSize);
+                        ctx.stroke();
+                    }
+                    if (cell.left) {
+                        ctx.beginPath();
+                        ctx.moveTo(x, y);
+                        ctx.lineTo(x, y + cellSize);
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            // META: círculo verde
+            ctx.fillStyle = '#42e86c';
+            ctx.shadowColor = '#b3ffb3';
+            ctx.shadowBlur = 20;
+            ctx.beginPath();
+            ctx.arc((dim-1)*cellSize + cellSize/2, (dim-1)*cellSize + cellSize/2, radius, 0, 2*Math.PI);
+            ctx.fill();
+
+            // JUGADOR: círculo azul
+            ctx.fillStyle = '#4dc3ff';
+            ctx.shadowColor = '#00d0ff';
+            ctx.beginPath();
+            ctx.arc(playerPos.x * cellSize + cellSize/2, playerPos.y * cellSize + cellSize/2, radius, 0, 2*Math.PI);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+        }
+
+        // ---------- MOVER JUGADOR ----------
+        function move(dx, dy) {
+            if (!gameActive || !maze.length) return;
+
+            const newX = playerPos.x + dx;
+            const newY = playerPos.y + dy;
+            const dim = maze.length;
+            if (newX < 0 || newX >= dim || newY < 0 || newY >= dim) return;
+
+            const cell = maze[playerPos.y][playerPos.x];
+            let canMove = false;
+            if (dx === 1 && !cell.right) canMove = true;
+            else if (dx === -1 && !cell.left) canMove = true;
+            else if (dy === 1 && !cell.bottom) canMove = true;
+            else if (dy === -1 && !cell.top) canMove = true;
+
+            if (canMove) {
+                playerPos.x = newX;
+                playerPos.y = newY;
+                drawMaze();
+                checkWin();
+            }
+        }
+
+        // ---------- VERIFICAR VICTORIA ----------
+        function checkWin() {
+            const dim = maze.length;
+            if (playerPos.x === dim-1 && playerPos.y === dim-1) {
+                if (!gameActive) return;
+                gameActive = false;
+                clearInterval(timerInterval);
+
+                const maxTime = getTimeByLevel(currentLevel);
+                const timeUsed = maxTime - timeLeft;
+
+                // Actualizar récord si es mejor
+                if (bestTimeThisRun === null || timeUsed < bestTimeThisRun) {
+                    bestTimeThisRun = timeUsed;
+                    recordSpan.innerText = bestTimeThisRun + 's';
+                    recordGlow.classList.remove('hidden');
+                    setTimeout(() => recordGlow.classList.add('hidden'), 2000);
+                }
+
+                if (currentLevel === MAX_LEVEL) {
+                    winModal.classList.add('show');
+                } else {
+                    currentLevel++;
+                    if (currentLevel > maxLevelUnlocked) maxLevelUnlocked = currentLevel;
+                    updateLevelDisplay();
+                    startLevel(currentLevel);
+                }
+            }
+        }
+
+        // ---------- TIEMPO AGOTADO (REINICIA NIVEL) ----------
+        function timeOut() {
+            if (gameActive) {
+                gameActive = false;
+                clearInterval(timerInterval);
+                startLevel(currentLevel);  // Reinicia el mismo nivel
+            }
+        }
+
+        // ---------- INICIAR UN NIVEL (con tiempo según nivel) ----------
+        function startLevel(level) {
+            const cfg = levelConfig[level] || levelConfig[1];
+            mazeSize = cfg.size;
+            maze = generateMaze(mazeSize);
+            playerPos = { x: 0, y: 0 };
+
+            // Obtener tiempo según el nivel (personalizado)
+            const maxTime = getTimeByLevel(level);
+            timeLeft = maxTime;
+            timerSpan.innerText = timeLeft;
+            timerSpan.classList.remove('urgent');
+
+            drawMaze();
+
+            if (timerInterval) clearInterval(timerInterval);
+            gameActive = true;
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                timerSpan.innerText = timeLeft;
+
+                if (timeLeft <= 5) {  // alerta cuando quedan 5s
+                    timerSpan.classList.add('urgent');
+                }
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    timeOut();
+                }
+            }, 1000);
+
+            restartBtn.disabled = false;
+            startBtn.disabled = true;
+            updateLevelDisplay();
+        }
+
+        // ---------- ACTUALIZAR UI SEGÚN NIVEL ----------
+        function updateLevelDisplay() {
+            levelSpan.innerText = `${currentLevel}/10`;
+            bigLevelSpan.innerText = `NIVEL ${currentLevel}`;
+            progressFill.style.width = (currentLevel * 10) + '%';
+
+            const cfg = levelConfig[currentLevel] || levelConfig[1];
+            difficultyChip.className = `difficulty-chip ${cfg.diff}`;
+            let diffText = 'FÁCIL';
+            if (cfg.diff === 'medium') diffText = 'MEDIO';
+            if (cfg.diff === 'hard') diffText = 'DURO';
+            difficultyChip.innerText = diffText;
+        }
+
+        // ---------- REINICIAR NIVEL ACTUAL ----------
+        function restartCurrentLevel() {
+            if (!currentLevel) currentLevel = 1;
+            startLevel(currentLevel);
+        }
+
+        // ---------- INICIAR JUEGO ----------
+        function startGame() {
+            currentLevel = 1;
+            maxLevelUnlocked = 1;
+            bestTimeThisRun = null;
+            recordSpan.innerText = '--';
+            recordGlow.classList.add('hidden');
+            startLevel(1);
+        }
+
+        // ---------- REINICIAR COMPLETO (después de ganar) ----------
+        function resetFullGame() {
+            winModal.classList.remove('show');
+            gameActive = false;
+            clearInterval(timerInterval);
+            startBtn.disabled = false;
+            restartBtn.disabled = true;
+
+            ctx.clearRect(0, 0, 500, 500);
+            ctx.fillStyle = '#0d1428';
+            ctx.fillRect(0, 0, 500, 500);
+            ctx.font = '18px "Press Start 2P", monospace';
+            ctx.fillStyle = '#9ab3ff';
+            ctx.textAlign = 'center';
+            ctx.fillText('PRESIONA COMENZAR', 250, 250);
+
+            levelSpan.innerText = '1/10';
+            bigLevelSpan.innerText = 'NIVEL 1';
+            progressFill.style.width = '10%';
+            difficultyChip.className = 'difficulty-chip easy';
+            difficultyChip.innerText = 'FÁCIL';
+            timerSpan.innerText = '15';
+            timerSpan.classList.remove('urgent');
+            recordSpan.innerText = '--';
+            currentLevel = 1;
+            bestTimeThisRun = null;
+        }
+
+        // ---------- EVENTOS TECLADO ----------
+        document.addEventListener('keydown', (e) => {
+            if (!gameActive) return;
+            const key = e.key.toLowerCase();
+            e.preventDefault();
+            if (key === 'arrowup' || key === 'w') move(0, -1);
+            else if (key === 'arrowdown' || key === 's') move(0, 1);
+            else if (key === 'arrowleft' || key === 'a') move(-1, 0);
+            else if (key === 'arrowright' || key === 'd') move(1, 0);
+        });
+
+        // Exponer funciones globales
+        window.startGame = startGame;
+        window.restartCurrentLevel = restartCurrentLevel;
+        window.resetFullGame = resetFullGame;
+
+        // Inicializar
+        resetFullGame();
+    })();
+</script>
+</body>
+</html>
